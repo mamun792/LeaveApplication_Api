@@ -141,22 +141,23 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     @Override
 
     public LeaveApplicationResponce approveLeaveApplication(int leaveApplicationId, LeaveStatus approvalStatus) {
+        LeaveApplication leaveApplication = leaveApplicationRepository.findById(leaveApplicationId)
+                .orElseThrow(() -> {
+                    throw new UserNotFoundException("Leave application not found");
+                });
+
+        leaveApplication.setStatus(approvalStatus);
+
+        leaveApplicationRepository.save(leaveApplication);
+        return LeaveApplicationResponce.builder().message("Leave application approved successfully").build();
         // LeaveApplication leaveApplication =
-        // leaveApplicationRepository.findById(leaveApplicationId)
-        // .orElseThrow(() -> {
-        // throw new UserNotFoundException("Leave application not found");
-        // });
-
+        // leaveApplicationRepository.findById(leaveApplicationId).orElseThrow();
+        // if (leaveApplication != null) {
         // leaveApplication.setStatus(approvalStatus);
-
         // leaveApplicationRepository.save(leaveApplication);
-        LeaveApplication leaveApplication = leaveApplicationRepository.findById(leaveApplicationId).orElseThrow();
-        if (leaveApplication != null) {
-            leaveApplication.setStatus(approvalStatus);
-            leaveApplicationRepository.save(leaveApplication);
-            return LeaveApplicationResponce.builder().build();
-        }
-        return null;
+        // return LeaveApplicationResponce.builder().build();
+        // }
+        // return null;
         // return LeaveApplicationResponce.builder().build();
     }
 

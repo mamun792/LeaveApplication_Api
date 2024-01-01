@@ -41,7 +41,7 @@ public class AuthencationServiceImpl implements AuthencationService {
                                 .lastName(registerRequest.getLastName())
                                 .email(registerRequest.getEmail())
                                 .password(passwordEncoder.encode(registerRequest.getPassword()))
-                                .role(Role.USER).build();
+                                .role(Role.ADMIN).build();
                 userRepository.save(user);
                 var jetToken = jwtService.generateToken(user);
                 return AuthencatonResponce.builder().Token(jetToken)

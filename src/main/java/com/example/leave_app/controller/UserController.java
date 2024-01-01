@@ -25,12 +25,15 @@ import com.example.leave_app.entity.LeaveApplication;
 import com.example.leave_app.service.LeaveApplicationService;
 import com.example.leave_app.service.UserService;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('USER')")
+@SecurityRequirement(name = "bearerAuth")
 public class UserController {
     @Autowired
     private final JwtBlacklist jwtBlacklist;
@@ -42,7 +45,7 @@ public class UserController {
     private final LeaveApplicationService leaveApplicationService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'MANAGER')")
+
     public ResponseEntity<?> chagePassword(@RequestBody ChangePasswordRequest password, Principal connectUser) {
         boolean passwordChanged = userService.changePassword(password, connectUser);
 
@@ -54,7 +57,7 @@ public class UserController {
     }
 
     @PostMapping("/logout")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'MANAGER')")
+
     public ResponseEntity<String> logout(HttpServletRequest reques) {
         String authHeader = reques.getHeader("Authorization");
         String jwt_Token = authHeader.substring(7);
@@ -63,7 +66,7 @@ public class UserController {
     }
 
     @PostMapping("/createLeaveApplication")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAuthority('user:create')")
     public ResponseEntity<LeaveApplicationResponce> createLeaveApplication(
             @Valid @RequestBody LeaveApplicationRequest leaveApplicationRequest) {
         System.out.println("leaveApplicationRequest = " + leaveApplicationRequest.toString());
@@ -72,14 +75,14 @@ public class UserController {
     }
 
     @GetMapping("/getLeaveBalance/{userId}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAuthority('user:read')")
     public ResponseEntity<Map<String, BigDecimal>> getLeaveBalance(@PathVariable int userId) {
         Map<String, BigDecimal> leaveBalance = leaveApplicationService.getLeaveBalanceByUser(userId);
         return new ResponseEntity<>(leaveBalance, HttpStatus.OK);
     }
 
     @GetMapping("/leaveHistory/{userId}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAuthority('user:read')")
     public ResponseEntity<List<LeaveApplication>> getLeaveHistory(@PathVariable int userId) {
         List<LeaveApplication> leaveHistory = leaveApplicationService
                 .getLeaveApplicationsByStatusOrderByDateAsc(userId);
