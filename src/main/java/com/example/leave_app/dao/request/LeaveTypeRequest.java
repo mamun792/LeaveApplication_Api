@@ -14,6 +14,9 @@ public class LeaveTypeRequest {
   @Positive(message = "Maximum leave should be a positive number")
   private int maxLeave;
 
+  @NotBlank(message = "Remark cannot be blank")
+  private String remark;
+
   @Pattern(regexp = "\\d{4}", message = "Year should be a four-digit number")
   @NotBlank(message = "Year cannot be blank")
   private String year;

@@ -35,7 +35,7 @@ public class LeaveType {
   private String leaveTypeName;
 
   private int maxLeave;
-
+  private String remark;
   private String year;
 
   @OneToMany(mappedBy = "leaveType", cascade = CascadeType.ALL, fetch = FetchType.EAGER)

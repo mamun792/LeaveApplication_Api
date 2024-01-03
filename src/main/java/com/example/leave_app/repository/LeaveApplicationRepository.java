@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import org.springframework.stereotype.Repository;
 
-//import com.example.leave_app.dao.responce.LeaveApplicationResponce;
+// import com.example.leave_app.dao.responce.LeaveApplicationResponce;
 import com.example.leave_app.entity.LeaveApplication;
 
 @Repository
@@ -29,12 +29,15 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
 
                         findTotalCBlaceByUserAndLeaveTypeGroupBy(@Param("userId") int userId);
 
-        @Query(value = "SELECT * FROM leave_application WHERE user_id = :userId ORDER BY from_date ASC", nativeQuery = true)
-        Optional<List<LeaveApplication>> findByUserIdOrderByFromDateAsc(@Param("userId") int userId);
+        // ------------------------------------------------------//
+        @Query("SELECT la FROM LeaveApplication la JOIN FETCH la.leaveType lt WHERE la.user.id = :userId")
 
-        // @Query(value = "SELECT id, from_date, to_date, status,remark, user_id,
-        // blanc_leave_count, leave_type_id FROM leave_application WHERE status =
-        // 'PENDING'", nativeQuery = true)
-        @Query(value = "SELECT * FROM leave_application WHERE status = 'PENDING'", nativeQuery = true)
-        Optional<List<LeaveApplication>> findByStatusOrderByFromDateAsc();
+        List<LeaveApplication> findByUserId(@Param("userId") int userId);
+
+        // .............................................................
+        // @Query(value = "SELECT * FROM leave_application WHERE status = 'PENDING'",
+        // nativeQuery = true)
+        @Query("SELECT la FROM LeaveApplication la JOIN FETCH la.leaveType lt JOIN FETCH la.user u WHERE la.status = 'PENDING'")
+        List<LeaveApplication> findByStatusOrderByFromDateAsc();
+
 }

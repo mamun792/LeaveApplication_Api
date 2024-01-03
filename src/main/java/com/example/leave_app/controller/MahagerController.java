@@ -2,6 +2,7 @@ package com.example.leave_app.controller;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.leave_app.dao.responce.LeaveApplicationResponce;
-import com.example.leave_app.entity.LeaveApplication;
+
 import com.example.leave_app.entity.LeaveStatus;
 import com.example.leave_app.service.LeaveApplicationService;
 
@@ -25,6 +26,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 @PreAuthorize("hasAnyRole('MANAGER')")
 @SecurityRequirement(name = "bearerAuth")
 public class MahagerController {
+    @Autowired
     private final LeaveApplicationService leaveApplicationService;
 
     public MahagerController(LeaveApplicationService leaveApplicationService) {
@@ -33,7 +35,7 @@ public class MahagerController {
 
     @GetMapping("/pending-approvals")
     @PreAuthorize("hasAuthority('manager:read')")
-    public ResponseEntity<List<LeaveApplication>> getPendingApprovals() {
+    public ResponseEntity<List<LeaveApplicationResponce>> getPendingApprovals() {
         return ResponseEntity.status(HttpStatus.OK).body(leaveApplicationService.getPendingApprovals());
     }
 

@@ -14,6 +14,7 @@ import com.example.leave_app.entity.LeaveType;
 import com.example.leave_app.entity.User;
 import com.example.leave_app.exception.LeaveBalanceNotFoundException;
 import com.example.leave_app.exception.LeaveExceededException;
+import com.example.leave_app.exception.NoavabialData;
 import com.example.leave_app.exception.PendingNotFoundException;
 import com.example.leave_app.exception.UserNotFoundException;
 import com.example.leave_app.repository.LeaveApplicationRepository;
@@ -26,6 +27,7 @@ import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
+
 import java.util.List;
 
 import java.math.BigDecimal;
@@ -66,13 +68,13 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
                 leaveApplicationRequest.getToDate());
         int valid = validateLeaveDays(leaveDays, leaveType);
 
-        if (totalleaveDays + valid >= leaveType.getMaxLeave()) {
+        if (totalleaveDays + valid > leaveType.getMaxLeave()) {
             throw new LeaveExceededException("You can not take more than " + leaveType.getMaxLeave() + " leave");
         }
-        System.out.println("totalleaveDays = " + totalleaveDays);
-        System.out.println("maxleave = " + leaveType.getMaxLeave());
-        System.out.println("leaveDays = " + leaveDays);
-        System.out.println("valid = " + valid);
+        // System.out.println("totalleaveDays = " + totalleaveDays);
+        // System.out.println("maxleave = " + leaveType.getMaxLeave());
+        // System.out.println("leaveDays = " + leaveDays);
+        // System.out.println("valid = " + valid);
 
         LeaveApplication leaveApplication = new LeaveApplication();
         leaveApplication.setFromDate(leaveApplicationRequest.getFromDate());
@@ -105,6 +107,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     }
 
     private int validateLeaveDays(Integer leaveDays, LeaveType leaveType) {
+
         if (leaveDays > leaveType.getMaxLeave()) {
             throw new LeaveExceededException(
                     "You can not take more than " + leaveType.getMaxLeave() + " leave");
@@ -116,7 +119,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     @Override
     public Map<String, BigDecimal> getLeaveBalanceByUser(int userId) {
         List<Object[]> result = leaveApplicationRepository.findTotalCBlaceByUserAndLeaveTypeGroupBy(userId)
-                .orElseThrow(() -> new LeaveBalanceNotFoundException("Leave balance not found for user"));
+                .orElseThrow(() -> new LeaveBalanceNotFoundException("Leave balance   not found for user"));
 
         Map<String, BigDecimal> leaveBalanceMap = new HashMap<>();
 
@@ -132,42 +135,64 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
 
     @Override
 
-    public List<LeaveApplication> getLeaveApplicationsByStatusOrderByDateAsc(int userId) {
-        return leaveApplicationRepository.findByUserIdOrderByFromDateAsc(userId).orElseThrow(() -> {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No  leave application found");
-        });
+    public List<LeaveApplicationResponce> getLeaveApplicationsForUser(int userId) {
+        List<LeaveApplication> leaveApplications = leaveApplicationRepository.findByUserId(userId);
+
+        if (leaveApplications.isEmpty()) {
+            throw new NoavabialData("No leave history found");
+        }
+        List<LeaveApplicationResponce> leaveApplicationResponces = leaveApplications.stream()
+                .map(leaveApplication -> LeaveApplicationResponce.builder()
+                        .id(leaveApplication.getId())
+                        .fromDate(leaveApplication.getFromDate())
+                        .toDate(leaveApplication.getToDate())
+                        .remark(leaveApplication.getRemark())
+                        .status(leaveApplication.getStatus())
+                        .blankLeaveCount(leaveApplication.getBlancLeaveCount())
+                        .leaveType(leaveApplication.getLeaveType().getLeaveTypeName())
+                        // .userId(leaveApplication.getUser().getId())
+
+                        .build())
+                .toList();
+        return leaveApplicationResponces;
     }
 
     @Override
 
     public LeaveApplicationResponce approveLeaveApplication(int leaveApplicationId, LeaveStatus approvalStatus) {
         LeaveApplication leaveApplication = leaveApplicationRepository.findById(leaveApplicationId)
-                .orElseThrow(() -> {
-                    throw new UserNotFoundException("Leave application not found");
-                });
-
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Leave application not found"));
         leaveApplication.setStatus(approvalStatus);
 
         leaveApplicationRepository.save(leaveApplication);
         return LeaveApplicationResponce.builder().message("Leave application approved successfully").build();
-        // LeaveApplication leaveApplication =
-        // leaveApplicationRepository.findById(leaveApplicationId).orElseThrow();
-        // if (leaveApplication != null) {
-        // leaveApplication.setStatus(approvalStatus);
-        // leaveApplicationRepository.save(leaveApplication);
-        // return LeaveApplicationResponce.builder().build();
-        // }
-        // return null;
-        // return LeaveApplicationResponce.builder().build();
+
     }
 
     @Override
 
-    public List<LeaveApplication> getPendingApprovals() {
-        List<LeaveApplication> pendingApprovals = leaveApplicationRepository.findByStatusOrderByFromDateAsc()
-                .orElseThrow(() -> new PendingNotFoundException("No pending leave application found"));
+    public List<LeaveApplicationResponce> getPendingApprovals() {
+        List<LeaveApplication> leaveApplications = leaveApplicationRepository.findByStatusOrderByFromDateAsc();
 
-        return pendingApprovals;
+        if (leaveApplications.isEmpty()) {
+            throw new PendingNotFoundException("No pending leave application found");
+        }
+
+        List<LeaveApplicationResponce> leaveApplicationResponces = leaveApplications.stream()
+                .map(leaveApplication -> LeaveApplicationResponce.builder()
+                        .id(leaveApplication.getId())
+                        .fromDate(leaveApplication.getFromDate())
+                        .toDate(leaveApplication.getToDate())
+                        .remark(leaveApplication.getRemark())
+                        .status(leaveApplication.getStatus())
+                        .blankLeaveCount(leaveApplication.getBlancLeaveCount())
+                        .fastName(leaveApplication.getUser().getFastName())
+                        .lastName(leaveApplication.getUser().getLastName())
+                        .leaveType(leaveApplication.getLeaveType().getLeaveTypeName())
+                        .build())
+                .toList();
+
+        return leaveApplicationResponces;
     }
 
 }

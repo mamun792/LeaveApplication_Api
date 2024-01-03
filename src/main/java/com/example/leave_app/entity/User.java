@@ -54,6 +54,10 @@ public class User implements UserDetails {
     @Builder.Default
     private List<LeaveApplication> leaveApplications = new ArrayList<LeaveApplication>();
 
+    // public int getlD() {
+    // return id;
+    // }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // List<GrantedAuthority> authorities = new ArrayList<>();

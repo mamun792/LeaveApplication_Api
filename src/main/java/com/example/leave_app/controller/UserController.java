@@ -10,7 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,13 +21,18 @@ import com.example.leave_app.config.JwtBlacklist;
 import com.example.leave_app.dao.request.ChangePasswordRequest;
 import com.example.leave_app.dao.request.LeaveApplicationRequest;
 import com.example.leave_app.dao.responce.LeaveApplicationResponce;
-import com.example.leave_app.entity.LeaveApplication;
+import com.example.leave_app.entity.User;
+//import com.example.leave_app.entity.LeaveApplication;
 import com.example.leave_app.service.LeaveApplicationService;
 import com.example.leave_app.service.UserService;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -74,19 +79,29 @@ public class UserController {
                 .createLeaveApplication(leaveApplicationRequest));
     }
 
-    @GetMapping("/getLeaveBalance/{userId}")
+    @GetMapping("/getLeaveBalance")
     @PreAuthorize("hasAuthority('user:read')")
-    public ResponseEntity<Map<String, BigDecimal>> getLeaveBalance(@PathVariable int userId) {
+    public ResponseEntity<Map<String, BigDecimal>> getLeaveBalance() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        int userId = ((User) userDetails).getId();
+
+        System.out.println("userId = " + userId);
         Map<String, BigDecimal> leaveBalance = leaveApplicationService.getLeaveBalanceByUser(userId);
         return new ResponseEntity<>(leaveBalance, HttpStatus.OK);
     }
 
-    @GetMapping("/leaveHistory/{userId}")
+    @GetMapping("/leaveHistory")
     @PreAuthorize("hasAuthority('user:read')")
-    public ResponseEntity<List<LeaveApplication>> getLeaveHistory(@PathVariable int userId) {
-        List<LeaveApplication> leaveHistory = leaveApplicationService
-                .getLeaveApplicationsByStatusOrderByDateAsc(userId);
-        // System.out.println("leaveHistory = " + leaveHistory.toString());
+    public ResponseEntity<List<LeaveApplicationResponce>> getLeaveHistory() {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        int userId = ((User) userDetails).getId();
+
+        List<LeaveApplicationResponce> leaveHistory = leaveApplicationService.getLeaveApplicationsForUser(userId);
+
         return new ResponseEntity<>(leaveHistory, HttpStatus.OK);
+
     }
 }

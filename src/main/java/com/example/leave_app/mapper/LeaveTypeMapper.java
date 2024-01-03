@@ -12,7 +12,7 @@ public class LeaveTypeMapper {
         return LeaveType.builder()
                 .leaveTypeName(leaveTypeRequest.getLeaveTypeName())
                 .maxLeave(leaveTypeRequest.getMaxLeave())
-
+                .remark(leaveTypeRequest.getRemark())
                 .year(leaveTypeRequest.getYear())
                 .build();
     }
@@ -21,6 +21,7 @@ public class LeaveTypeMapper {
         return LeaveTypeResponce.builder()
                 .id(leaveType.getId())
                 .leaveTypeName(leaveType.getLeaveTypeName())
+                .remark(leaveType.getRemark())
                 .maxLeave(leaveType.getMaxLeave())
                 .year(leaveType.getYear())
                 .build();

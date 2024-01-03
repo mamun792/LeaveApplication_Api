@@ -15,7 +15,7 @@ public class LeaveTypeResponce {
     private int id;
     private String leaveTypeName;
     private int maxLeave;
-
+    private String remark;
     private String year;
     private List<LeaveApplicationResponce> leaveApplications;
 }
