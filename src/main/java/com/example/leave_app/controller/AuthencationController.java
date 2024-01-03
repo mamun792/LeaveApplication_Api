@@ -38,4 +38,5 @@ public class AuthencationController {
     public ResponseEntity<AuthencatonResponce> register(@Valid @RequestBody AuthencationRequest authencationRequest) {
         return ResponseEntity.status(HttpStatus.OK).body(authencationService.authencation(authencationRequest));
     }
+
 }

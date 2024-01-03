@@ -64,6 +64,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         Integer totalleaveDays = leaveApplicationRepository.findTotalCBlaceByUserAndLeaveTypeGroupBy(
                 user.getId(),
                 leaveType.getId());
+
         Integer leaveDays = calculateLeaveDays(leaveApplicationRequest.getFromDate(),
                 leaveApplicationRequest.getToDate());
         int valid = validateLeaveDays(leaveDays, leaveType);

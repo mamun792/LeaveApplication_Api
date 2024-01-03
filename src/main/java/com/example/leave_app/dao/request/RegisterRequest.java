@@ -2,6 +2,7 @@ package com.example.leave_app.dao.request;
 
 import lombok.Data;
 import lombok.Builder;
+import jakarta.persistence.Column;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -20,6 +21,7 @@ public class RegisterRequest {
     @Email(message = "email is not valid")
     private String email;
     @NotBlank(message = "password is mandatory")
+    @Column(unique = true)
     private String password;
 
 }

@@ -34,9 +34,6 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
 
         List<LeaveApplication> findByUserId(@Param("userId") int userId);
 
-        // .............................................................
-        // @Query(value = "SELECT * FROM leave_application WHERE status = 'PENDING'",
-        // nativeQuery = true)
         @Query("SELECT la FROM LeaveApplication la JOIN FETCH la.leaveType lt JOIN FETCH la.user u WHERE la.status = 'PENDING'")
         List<LeaveApplication> findByStatusOrderByFromDateAsc();
 
