@@ -3,7 +3,8 @@ package com.example.leave_app.service;
 import java.math.BigDecimal;
 import java.util.Map;
 
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import com.example.leave_app.dao.request.LeaveApplicationRequest;
 import com.example.leave_app.dao.responce.LeaveApplicationResponce;
@@ -15,9 +16,10 @@ public interface LeaveApplicationService {
 
     Map<String, BigDecimal> getLeaveBalanceByUser(int userId);
 
-    public List<LeaveApplicationResponce> getLeaveApplicationsForUser(int userId);
+    public Page<LeaveApplicationResponce> getLeaveApplicationsForUser(int userId, Pageable pageable);
 
-    public LeaveApplicationResponce approveLeaveApplication(int leaveApplicationId, LeaveStatus approvalStatus);
+    public LeaveApplicationResponce approveLeaveApplication(int leaveApplicationId, LeaveStatus approvalStatus,
+            String m_remark);
 
-    public List<LeaveApplicationResponce> getPendingApprovals();
+    public Page<LeaveApplicationResponce> getPendingApprovals(Pageable pageable);
 }

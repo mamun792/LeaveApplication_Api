@@ -28,8 +28,10 @@ public class LeaveApplicationRequest {
     @NotBlank(message = "Please provide a valid reason")
     private String remark;
 
+    private String m_remark;
+
     private LeaveStatus status;
-    @NotNull(message = "Please provide a valid user")
+    // @NotNull(message = "Please provide a valid user")
     private User user;
 
     private Integer blancLeaveCount;

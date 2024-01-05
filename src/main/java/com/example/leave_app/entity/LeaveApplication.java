@@ -36,6 +36,8 @@ public class LeaveApplication {
 
     private String remark;
 
+    private String m_remark;
+
     @Enumerated(EnumType.STRING)
     private LeaveStatus status;
 

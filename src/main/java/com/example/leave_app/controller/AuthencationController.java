@@ -3,9 +3,10 @@ package com.example.leave_app.controller;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.leave_app.dao.request.AuthencationRequest;
+
 import com.example.leave_app.dao.request.RegisterRequest;
 import com.example.leave_app.dao.responce.AuthencatonResponce;
-
+import com.example.leave_app.dao.responce.ResponseModel;
 import com.example.leave_app.service.AuthencationService;
 
 import jakarta.validation.Valid;
@@ -28,15 +29,29 @@ public class AuthencationController {
 
     @PostMapping("/register")
 
-    public ResponseEntity<AuthencatonResponce> register(
+    public ResponseEntity<ResponseModel<AuthencatonResponce>> register(
             @Valid @RequestBody RegisterRequest registerRequest) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authencationService.register(registerRequest));
+        try {
+
+            return ResponseEntity.status(HttpStatus.OK).body(ResponseModel.success(HttpStatus.OK,
+                    authencationService.register(registerRequest)));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ResponseModel.error(HttpStatus.BAD_REQUEST, e.getMessage()));
+        }
     }
 
     @PostMapping("/authentication")
 
-    public ResponseEntity<AuthencatonResponce> register(@Valid @RequestBody AuthencationRequest authencationRequest) {
-        return ResponseEntity.status(HttpStatus.OK).body(authencationService.authencation(authencationRequest));
-    }
+    public ResponseEntity<ResponseModel<AuthencatonResponce>> authentication(
+            @Valid @RequestBody AuthencationRequest authencationRequest) {
+        try {
+            return ResponseEntity.status(HttpStatus.OK).body(ResponseModel.success(HttpStatus.OK,
+                    authencationService.authencation(authencationRequest)));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ResponseModel.error(HttpStatus.BAD_REQUEST, e.getMessage()));
+        }
 
+    }
 }

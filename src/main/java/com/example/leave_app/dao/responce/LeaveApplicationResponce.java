@@ -21,6 +21,7 @@ public class LeaveApplicationResponce {
     private LocalDate fromDate;
     private LocalDate toDate;
     private String remark;
+    private String m_remark;
     private LeaveStatus status;
     private int blankLeaveCount;
     private Long userId;

@@ -2,6 +2,9 @@ package com.example.leave_app.service.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -19,7 +22,10 @@ import com.example.leave_app.exception.PendingNotFoundException;
 import com.example.leave_app.exception.UserNotFoundException;
 import com.example.leave_app.repository.LeaveApplicationRepository;
 import com.example.leave_app.repository.LeaveTypeRepository;
-import com.example.leave_app.repository.UserRepository;
+
+import org.springframework.data.domain.Page;
+
+import org.springframework.data.domain.Pageable;
 import com.example.leave_app.service.LeaveApplicationService;
 
 import jakarta.transaction.Transactional;
@@ -38,8 +44,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 
 public class LeaveApplicationServiceImpl implements LeaveApplicationService {
-    @Autowired
-    private final UserRepository userService;
 
     @Autowired
     private final LeaveApplicationRepository leaveApplicationRepository;
@@ -51,10 +55,10 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
     @Transactional
     public LeaveApplicationResponce createLeaveApplication(LeaveApplicationRequest leaveApplicationRequest) {
 
-        User user = userService.findById(leaveApplicationRequest.getUser().getId())
-                .orElseThrow(() -> {
-                    throw new UserNotFoundException("User not found");
-                });
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        int userId = ((User) userDetails).getId();
+        System.out.println("userId = " + userId);
 
         LeaveType leaveType = leaveTypeRepository.findById(leaveApplicationRequest.getLeaveType().getId())
                 .orElseThrow(() -> {
@@ -62,7 +66,7 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
                 });
 
         Integer totalleaveDays = leaveApplicationRepository.findTotalCBlaceByUserAndLeaveTypeGroupBy(
-                user.getId(),
+                userId,
                 leaveType.getId());
 
         Integer leaveDays = calculateLeaveDays(leaveApplicationRequest.getFromDate(),
@@ -82,6 +86,8 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
         leaveApplication.setToDate(leaveApplicationRequest.getToDate());
         leaveApplication.setRemark(leaveApplicationRequest.getRemark());
         leaveApplication.setStatus(LeaveStatus.PENDING);
+        User user = new User();
+        user.setId(userId);
         leaveApplication.setUser(user);
         leaveApplication.setBlancLeaveCount(valid);
         leaveApplication.setLeaveType(leaveApplicationRequest.getLeaveType());
@@ -136,35 +142,41 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
 
     @Override
 
-    public List<LeaveApplicationResponce> getLeaveApplicationsForUser(int userId) {
-        List<LeaveApplication> leaveApplications = leaveApplicationRepository.findByUserId(userId);
+    public Page<LeaveApplicationResponce> getLeaveApplicationsForUser(int userId, Pageable pageable) {
+        Page<LeaveApplication> leaveApplications = leaveApplicationRepository.findByUserId(userId, pageable);
 
         if (leaveApplications.isEmpty()) {
             throw new NoavabialData("No leave history found");
         }
-        List<LeaveApplicationResponce> leaveApplicationResponces = leaveApplications.stream()
-                .map(leaveApplication -> LeaveApplicationResponce.builder()
-                        .id(leaveApplication.getId())
-                        .fromDate(leaveApplication.getFromDate())
-                        .toDate(leaveApplication.getToDate())
-                        .remark(leaveApplication.getRemark())
-                        .status(leaveApplication.getStatus())
-                        .blankLeaveCount(leaveApplication.getBlancLeaveCount())
-                        .leaveType(leaveApplication.getLeaveType().getLeaveTypeName())
-                        // .userId(leaveApplication.getUser().getId())
+        return leaveApplications.map(leaveApplication -> LeaveApplicationResponce.builder()
+                .id(leaveApplication.getId())
+                .fromDate(leaveApplication.getFromDate())
+                .toDate(leaveApplication.getToDate())
+                .remark(leaveApplication.getRemark())
+                .status(leaveApplication.getStatus()).m_remark(leaveApplication.getM_remark())
 
-                        .build())
-                .toList();
-        return leaveApplicationResponces;
+                .blankLeaveCount(leaveApplication.getBlancLeaveCount())
+                .leaveType(leaveApplication.getLeaveType().getLeaveTypeName())
+                .build());
+
     }
 
     @Override
-
-    public LeaveApplicationResponce approveLeaveApplication(int leaveApplicationId, LeaveStatus approvalStatus) {
+    @Transactional
+    public LeaveApplicationResponce approveLeaveApplication(int leaveApplicationId, LeaveStatus approvalStatus,
+            String m_remark) {
         LeaveApplication leaveApplication = leaveApplicationRepository.findById(leaveApplicationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Leave application not found"));
-        leaveApplication.setStatus(approvalStatus);
+        if (leaveApplication.getStatus() == LeaveStatus.APPROVED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Leave application already approved. No need to approve again");
+        }
+        if (leaveApplication.getStatus() == LeaveStatus.REJECTED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Leave application already rejected");
+        }
 
+        leaveApplication.setStatus(approvalStatus);
+        leaveApplication.setM_remark(m_remark);
         leaveApplicationRepository.save(leaveApplication);
         return LeaveApplicationResponce.builder().message("Leave application approved successfully").build();
 
@@ -172,28 +184,26 @@ public class LeaveApplicationServiceImpl implements LeaveApplicationService {
 
     @Override
 
-    public List<LeaveApplicationResponce> getPendingApprovals() {
-        List<LeaveApplication> leaveApplications = leaveApplicationRepository.findByStatusOrderByFromDateAsc();
+    public Page<LeaveApplicationResponce> getPendingApprovals(Pageable pageable) {
+        Page<LeaveApplication> leaveApplications = leaveApplicationRepository.findByStatusOrderByFromDateAsc(
+                pageable);
 
         if (leaveApplications.isEmpty()) {
             throw new PendingNotFoundException("No pending leave application found");
         }
 
-        List<LeaveApplicationResponce> leaveApplicationResponces = leaveApplications.stream()
-                .map(leaveApplication -> LeaveApplicationResponce.builder()
-                        .id(leaveApplication.getId())
-                        .fromDate(leaveApplication.getFromDate())
-                        .toDate(leaveApplication.getToDate())
-                        .remark(leaveApplication.getRemark())
-                        .status(leaveApplication.getStatus())
-                        .blankLeaveCount(leaveApplication.getBlancLeaveCount())
-                        .fastName(leaveApplication.getUser().getFastName())
-                        .lastName(leaveApplication.getUser().getLastName())
-                        .leaveType(leaveApplication.getLeaveType().getLeaveTypeName())
-                        .build())
-                .toList();
+        return leaveApplications.map(leaveApplication -> LeaveApplicationResponce.builder()
+                .id(leaveApplication.getId())
+                .fromDate(leaveApplication.getFromDate())
+                .toDate(leaveApplication.getToDate())
+                .remark(leaveApplication.getRemark())
+                .status(leaveApplication.getStatus())
+                .blankLeaveCount(leaveApplication.getBlancLeaveCount())
+                .fastName(leaveApplication.getUser().getFastName())
+                .lastName(leaveApplication.getUser().getLastName())
+                .leaveType(leaveApplication.getLeaveType().getLeaveTypeName())
+                .build());
 
-        return leaveApplicationResponces;
     }
 
 }
