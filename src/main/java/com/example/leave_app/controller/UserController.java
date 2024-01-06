@@ -1,9 +1,7 @@
 package com.example.leave_app.controller;
 
 import java.security.Principal;
-
-import java.math.BigDecimal;
-import java.util.Map;
+import java.time.LocalDate;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
@@ -26,12 +24,15 @@ import com.example.leave_app.config.JwtBlacklist;
 import com.example.leave_app.dao.request.ChangePasswordRequest;
 import com.example.leave_app.dao.request.LeaveApplicationRequest;
 import com.example.leave_app.dao.responce.LeaveApplicationResponce;
+import com.example.leave_app.dao.responce.LeaveTypeResponce;
 import com.example.leave_app.dao.responce.ResponseModel;
+import com.example.leave_app.entity.DateRange;
+import com.example.leave_app.entity.LeaveStatus;
 import com.example.leave_app.entity.User;
 //import com.example.leave_app.entity.LeaveApplication;
 import com.example.leave_app.service.LeaveApplicationService;
 import com.example.leave_app.service.UserService;
-
+import java.util.List;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -56,7 +57,7 @@ public class UserController {
     private final LeaveApplicationService leaveApplicationService;
 
     @PostMapping("/changePassword")
-
+@PreAuthorize("hasAnyAuthority('user:write','user:update','manager:write','manager:update','admin:write','admin:update')")
     public ResponseEntity<ResponseModel<?>> chagePassword(@RequestBody ChangePasswordRequest password,
             Principal connectUser) {
         boolean passwordChanged = userService.changePassword(password, connectUser);
@@ -105,37 +106,40 @@ public class UserController {
 
     @GetMapping("/getLeaveBalance")
     @PreAuthorize("hasAuthority('user:read')")
-    public ResponseEntity<ResponseModel<Map<String, BigDecimal>>> getLeaveBalance() {
-
+    public ResponseEntity<ResponseModel<List<LeaveTypeResponce>>> getLeaveBalance() {
         try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            int userId = ((User) userDetails).getId();
 
-            Map<String, BigDecimal> leaveBalance = leaveApplicationService.getLeaveBalanceByUser(userId);
-
-            return ResponseEntity.ok(ResponseModel.success(HttpStatus.OK, leaveBalance));
+            List<LeaveTypeResponce> leaveBalances = leaveApplicationService.getLeaveBalancesByUserId();
+            return ResponseEntity.ok(ResponseModel.success(HttpStatus.OK, leaveBalances));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ResponseModel.error(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
         }
-
     }
 
     @GetMapping("/leaveHistory")
     @PreAuthorize("hasAuthority('user:read')")
     public ResponseEntity<ResponseModel<Page<LeaveApplicationResponce>>> getLeaveHistory(
             @RequestParam(defaultValue = "0") int pageNo,
-            @RequestParam(defaultValue = "10") int pageSize) {
+            @RequestParam(defaultValue = "10") int pageSize,
+            @RequestParam(required = false) String fromDate,
+            @RequestParam(required = false) String toDate,
+            @RequestParam(required = false) LeaveStatus status,
+            @RequestParam(required = false) String leaveType) {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             int userId = ((User) userDetails).getId();
 
+           
+            DateRange dateRange = createDateRange(fromDate, toDate);
+
+
             Pageable pageable = PageRequest.of(pageNo, pageSize);
 
-            Page<LeaveApplicationResponce> leaveHistory = leaveApplicationService.getLeaveApplicationsForUser(userId,
-                    pageable);
+           
+            Page<LeaveApplicationResponce> leaveHistory = leaveApplicationService.getLeaveApplicationsForUserFiltered(
+                    userId, dateRange, status, leaveType, pageable);
 
             return ResponseEntity.ok(ResponseModel.success(HttpStatus.OK, leaveHistory));
         } catch (Exception e) {
@@ -144,4 +148,13 @@ public class UserController {
         }
     }
 
+    private DateRange createDateRange(String fromDate, String toDate) {
+        DateRange dateRange = new DateRange();
+        if (fromDate != null && toDate != null) {
+            dateRange.setStartDate(LocalDate.parse(fromDate));
+            dateRange.setEndDate(LocalDate.parse(toDate));
+            ;
+        }
+        return dateRange;
+    }
 }
