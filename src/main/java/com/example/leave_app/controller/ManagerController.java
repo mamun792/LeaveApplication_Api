@@ -61,7 +61,7 @@ public class ManagerController {
     }
 
     @PostMapping("/approve")
-    @PreAuthorize("hasAuthority('manager:update','admin:update')")
+    @PreAuthorize("hasAnyAuthority('manager:update','admin:update')")
     public ResponseEntity<ResponseModel<LeaveApplicationResponce>> approveLeaveApplication(
             @RequestParam int leaveApplicationId,
             @RequestParam LeaveStatus approvalStatus,
@@ -79,7 +79,7 @@ public class ManagerController {
     }
 
     @PostMapping("/custom")
-    @PreAuthorize("hasAnyAuthority('manager:create', 'admin:create', 'user:create')")
+    @PreAuthorize("hasAnyAuthority('manager:create', 'admin:create')")
     public ResponseEntity<ResponseModel<LeaveApplicationResponce>> customLeaveCreate(
             @Valid @RequestBody LeaveApplicationRequest leaveApplicationRequest) {
         try {
